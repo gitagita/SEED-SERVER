@@ -1,4 +1,5 @@
 const express = require('express');
+
 const app = express();
 const cookieParser = require('cookie-parser');
 
@@ -24,4 +25,3 @@ app
   .on('error', () => {
     process.exit(1);
   });
-
