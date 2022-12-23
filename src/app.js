@@ -10,6 +10,9 @@ app.use(cookieParser());
 
 app.use('/', require('./routes'));
 
+//회원 리스트 조회 api yuna
+app.use('/user/privacy', require('./routes/api/user/privacy'));
+
 app.use('*', (req, res) => {
   res.status(404).json({
     status: 404,
