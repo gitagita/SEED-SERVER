@@ -1,6 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var db = require('./../../../../db');
+const bcrypt = require('bcrypt');
 
 var setResponse = function (error, data, message, status) {
     if (!error) status = "200";
@@ -53,6 +54,44 @@ router.get("/:id", function (req, res) {
             } else {
                 sendmsg = setResponse(false, result, "회원 조회 성공");
                 res.send(sendmsg);
+            }
+        }
+    );
+});
+
+/*
+ * 비밀번호 확인 yuna
+ * @author yuna
+ */
+router.post("/:id/password", function (req, res) {
+    const userEmail = req.params.id;
+    const body = req.body;
+    const userPW = body.userPW;
+    let sendmsg = "";
+
+    //비밀번호 일치여부 확인
+    const sql = "SELECT password FROM member WHERE email = '" + userEmail + "';";
+    db.query(
+        sql, (err, result) => {
+            if (err) {
+                sendmsg = setResponse(true, err, "서버 내부 오류", 500);
+                res.send(sendmsg);
+            } else {
+                if (result.length != 0 && result[0].password != undefined) {
+                    //비밀번호 일치여부 검사
+                    bcrypt.compare(userPW, result[0].password, (error, response) => {
+                        if (response) {
+                            sendmsg = setResponse(false, { "auth": true }, "비밀번호 일치");
+                            res.send(sendmsg);
+                        } else {
+                            sendmsg = setResponse(true, { "auth": false }, "비밀번호 불일치");
+                            res.send(sendmsg);
+                        }
+                    })
+                } else {
+                    sendmsg = setResponse(true, { "auth": false }, "비밀번호 조회 오류");
+                    res.send(sendmsg);
+                }
             }
         }
     );
