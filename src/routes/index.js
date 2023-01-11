@@ -16,4 +16,7 @@ router.use('/user/register', require('./api/user/register'));
 //회원 탈퇴 api yuna
 router.use('/user/delete', require('./api/user/delete'));
 
+//회원 로그인 api yuna
+router.use('/user/login', require('./api/user/login'));
+
 module.exports = router;
