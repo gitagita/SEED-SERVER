@@ -2,6 +2,7 @@ var express = require("express");
 var router = express.Router();
 var db = require('./../../../../db');
 const bcrypt = require('bcrypt');
+var userfunc = require('./userfunc');
 
 var setResponse = function (error, data, message, status) {
     if (!error) status = "200";
@@ -18,17 +19,14 @@ var setResponse = function (error, data, message, status) {
  * @author yuna
  */
 router.get("/", function (req, res) {
-    let sendmsg = "";
     let field = "email as memId, memNm, image";
-    const sql = "SELECT " + field + " FROM member;";
+    const sql = "SELECT " + field + " FROM member WHERE withdrawal = 0;";
     db.query(
         sql, (err, result) => {
             if (err) {
-                sendmsg = setResponse(true, err, "서버 내부 오류", 500);
-                res.send(sendmsg);
+                res.send(setResponse(true, err, "서버 내부 오류", 500));
             } else {
-                sendmsg = setResponse(false, result, "회원 조회 성공");
-                res.send(sendmsg);
+                res.send(setResponse(false, result, "회원 조회 성공"));
             }
         }
     );
@@ -40,20 +38,16 @@ router.get("/", function (req, res) {
  */
 router.get("/:id", function (req, res) {
     const id = req.params.id;
-    let sendmsg = "";
     let field = "email as memId, memNm, image";
-    const sql = "SELECT " + field + " FROM member WHERE email = '" + id + "';";
+    const sql = "SELECT " + field + " FROM member WHERE email = '" + id + "' AND withdrawal = 0;";
     db.query(
         sql, (err, result) => {
             if (err) {
-                sendmsg = setResponse(true, err, "서버 내부 오류", 500);
-                res.send(sendmsg);
+                res.send(setResponse(true, err, "서버 내부 오류", 500));
             } else if (result.length == 0) {
-                sendmsg = setResponse(true, err, "회원 조회 실패(해당 회원 아이디 정보 없음)");
-                res.send(sendmsg);
+                res.send(setResponse(true, err, "회원 조회 실패(해당 회원 아이디 정보 없음)"));
             } else {
-                sendmsg = setResponse(false, result, "회원 조회 성공");
-                res.send(sendmsg);
+                res.send(setResponse(false, result, "회원 조회 성공"));
             }
         }
     );
@@ -63,38 +57,12 @@ router.get("/:id", function (req, res) {
  * 비밀번호 확인 yuna
  * @author yuna
  */
-router.post("/:id/password", function (req, res) {
+router.post("/:id/password", async function (req, res) {
     const userEmail = req.params.id;
     const body = req.body;
     const userPW = body.userPW;
-    let sendmsg = "";
-
     //비밀번호 일치여부 확인
-    const sql = "SELECT password FROM member WHERE email = '" + userEmail + "';";
-    db.query(
-        sql, (err, result) => {
-            if (err) {
-                sendmsg = setResponse(true, err, "서버 내부 오류", 500);
-                res.send(sendmsg);
-            } else {
-                if (result.length != 0 && result[0].password != undefined) {
-                    //비밀번호 일치여부 검사
-                    bcrypt.compare(userPW, result[0].password, (error, response) => {
-                        if (response) {
-                            sendmsg = setResponse(false, { "auth": true }, "비밀번호 일치");
-                            res.send(sendmsg);
-                        } else {
-                            sendmsg = setResponse(true, { "auth": false }, "비밀번호 불일치");
-                            res.send(sendmsg);
-                        }
-                    })
-                } else {
-                    sendmsg = setResponse(true, { "auth": false }, "비밀번호 조회 오류");
-                    res.send(sendmsg);
-                }
-            }
-        }
-    );
+    res.send(await userfunc.checkPassword(userEmail, userPW));
 });
 
 module.exports = router;

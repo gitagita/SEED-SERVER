@@ -4,8 +4,9 @@ var db = require('./../../../../db');
 const moment = require("moment");
 const bcrypt = require('bcrypt');
 const SEED_SALT = 12;
+var userfunc = require('./userfunc');
 
-var setResponse = function (error, data, message, status) {
+var setResponse = (error, data, message, status) => {
     if (!error) status = "200";
     return {
         'status': status,
@@ -19,19 +20,26 @@ var setResponse = function (error, data, message, status) {
  * 회원 정보 수정(이름, 이미지)
  * @author yuna
  */
-router.post("/", function (req, res) {
+router.post("/", async function (req, res) {
     const body = req.body;
     const userEmail = body.userEmail;
-    let sendmsg = "";
+    const userPW = body.userPW;
     let field = [];
     let setting = [];
 
+    //유효성 검사
     if (userEmail === undefined) {
-        sendmsg = setResponse(true, { 'modified': false }, "회원정보 수정 실패(이메일 필수)");
-        res.send(sendmsg);
-        return;
+        return res.send(setResponse(true, { 'modified': false }, "회원정보 수정 실패(이메일 필수)"));
     }
-
+    if (userPW === undefined) {
+        return res.send(setResponse(true, { 'modified': false }, "회원정보 수정 실패(비밀번호 필수)"));
+    }
+    //회원 비밀번호 일치 여부 확인
+    let checkPw = await userfunc.checkPassword(userEmail,userPW);
+    if(!checkPw.data.corect){
+        return res.send(setResponse(true, { 'modified': false }, "회원정보 수정 실패("+checkPw.message+")"));
+    }
+    
     if (body.userNickname) {  //회원 이름
         field.push("memNm = ?");
         setting.push(body.userNickname);
@@ -40,7 +48,6 @@ router.post("/", function (req, res) {
         field.push("image = ?");
         setting.push(body.userProfileImage);
     }
-
     field.push("modDt = ?");    //수정일
     setting.push(moment().format("YYYY-MM-DDTHH:mm:ss"));
 
@@ -50,11 +57,9 @@ router.post("/", function (req, res) {
     db.query(
         sql, setting, (err, result) => {
             if (err) {
-                sendmsg = setResponse(true, err, "서버 내부 오류", 500);
-                res.send(sendmsg);
+                res.send(setResponse(true, err, "서버 내부 오류", 500));
             } else {
-                sendmsg = setResponse(false, { 'modified': true, 'result': result }, "회원정보 수정 완료");
-                res.send(sendmsg);
+                res.send(setResponse(false, { 'modified': true, 'result': result }, "회원정보 수정 완료"));
             }
         }
     );
@@ -64,69 +69,49 @@ router.post("/", function (req, res) {
  * 회원 비밀번호 수정
  * @author yuna
  */
-router.post("/password", function (req, res) {
+router.post("/password", async function (req, res) {
     const body = req.body;
     const userEmail = body.userEmail;
     const userPW = body.userPW;
     const newPW = body.newPW;
-    let sendmsg = "";
+
     if (userEmail === undefined) {
-        sendmsg = setResponse(true, { 'modified': false }, "비밀번호 수정 실패(이메일 필수)");
-        return res.send(sendmsg);
+        return res.send(setResponse(true, { 'modified': false }, "비밀번호 수정 실패(이메일 필수)"));
     }
     if (userPW === undefined) {
-        sendmsg = setResponse(true, { 'modified': false }, "비밀번호 수정 실패(비밀번호 필수)");
-        return res.send(sendmsg);
-    }if (newPW === undefined) {
-        sendmsg = setResponse(true, { 'modified': false }, "비밀번호 수정 실패(변경할 비밀번호 필수)");
-        return res.send(sendmsg);
+        return res.send(setResponse(true, { 'modified': false }, "비밀번호 수정 실패(비밀번호 필수)"));
+    }
+    if (newPW === undefined) {
+        return res.send(setResponse(true, { 'modified': false }, "비밀번호 수정 실패(변경할 비밀번호 필수)"));
+    }
+    if (newPW === userPW) {
+        return res.send(setResponse(true, { 'modified': false }, "비밀번호 수정 실패(현재 비밀번호와 변경하려는 비밀번호 일치)"));
     }
 
-    //비밀번호 일치여부 확인
-    const sqlCheckPw = "SELECT password FROM member WHERE email = '" + userEmail + "';";
-    db.query(
-        sqlCheckPw, (err, result) => {
-            if (err) {
-                sendmsg = setResponse(true, err, "서버 내부 오류", 500);
-                res.send(sendmsg);
-            } else {
-                if (result.length != 0 && result[0].password != undefined) {
-                    //비밀번호 일치여부 검사
-                    bcrypt.compare(userPW, result[0].password, (error, response) => {
-                        if (response) {
-                            //비밀번호 bcrypt 암호화
-                            bcrypt.hash(newPW, SEED_SALT, (err2, encryptedPW) => {
-                                if (err2) {
-                                    sendmsg = setResponse(true, { 'modified': false }, "비밀번호 수정 실패(비밀번호 암호화 실패)");
-                                    res.send(sendmsg);
-                                } else {    //비밀번호 변경
-                                    const modDt = moment().format("YYYY-MM-DDTHH:mm:ss");
-                                    const sql = "UPDATE member SET password = ?, modDt = ? WHERE email = ?;";
-                                    db.query(
-                                        sql, [encryptedPW, modDt, userEmail], (err3, result) => {
-                                            if (err3) {
-                                                sendmsg = setResponse(true, err3, "서버 내부 오류", 500);
-                                                res.send(sendmsg);
-                                            } else {
-                                                sendmsg = setResponse(false, { 'modified': true, 'result': result }, "비밀번호 수정 완료");
-                                                res.send(sendmsg);
-                                            }
-                                        }
-                                    );
-                                }
-                            })
-                        } else {
-                            sendmsg = setResponse(true, { 'modified': false }, "비밀번호 수정 실패(비밀번호 불일치)");
-                            res.send(sendmsg);
-                        }
-                    })
-                } else {
-                    sendmsg = setResponse(true, { 'modified': false }, "비밀번호 수정 실패(비밀번호 조회 에러) : " + err);
-                    res.send(sendmsg);
+    //회원 비밀번호 일치 여부 확인
+    let checkPw = await userfunc.checkPassword(userEmail,userPW);
+    if(!checkPw.data.corect){
+        return res.send(setResponse(true, { 'modified': false }, "비밀번호 수정 실패("+checkPw.message+")"));
+    }
+
+    //비밀번호 bcrypt 암호화 및 비밀번호 업데이트
+    bcrypt.hash(newPW, SEED_SALT, (err, encryptedPW) => {
+        if (err) {
+            res.send(setResponse(true, { 'modified': false }, "비밀번호 수정 실패(비밀번호 암호화 실패)"));
+        } else {    //비밀번호 변경
+            const modDt = moment().format("YYYY-MM-DDTHH:mm:ss");
+            const sql = "UPDATE member SET password = ?, modDt = ? WHERE email = ?;";
+            db.query(
+                sql, [encryptedPW, modDt, userEmail], (err2, result) => {
+                    if (err2) {
+                        res.send(setResponse(true, err2, "서버 내부 오류", 500));
+                    } else {
+                        res.send(setResponse(false, { 'modified': true, 'result': result }, "비밀번호 수정 완료"));
+                    }
                 }
-            }
+            );
         }
-    );
+    })
 });
 
 module.exports = router;

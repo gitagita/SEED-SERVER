@@ -4,6 +4,7 @@ var db = require('../../../../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+var userfunc = require('./userfunc');
 
 var setResponse = function (error, data, message, status) {
     if (!error) status = 200;
@@ -46,38 +47,18 @@ const token = () => {
  * 최초 로그인
  * @author yuna
  */
-router.post("/", function (req, res) {
+router.post("/", async function (req, res) {
     const body = req.body;
     const userEmail = body.userEmail;
     const userPW = body.userPW;
-    let authData = "";
 
-    //회원 아이디, 비밀번호 확인
-    const sqlCheckPw = "SELECT password FROM member WHERE email = '" + userEmail + "';";
-    db.query(
-        sqlCheckPw, (err, result) => {
-            if (err) {
-                authData = setResponse(true, err, "서버 내부 오류", 500);
-                res.send(authData);
-            } else {
-                if (result.length != 0 && result[0].password != undefined) {
-                    //비밀번호 일치여부 검사
-                    bcrypt.compare(userPW, result[0].password, (error, response) => {
-                        if (response) {
-                            authData = setResponse(false, { 'auth': true, 'accessToken': token().access(userEmail), 'refreshToken': token().refresh(userEmail)}, "토큰발급 성공(로그인 성공)");
-                            res.send(authData);
-                        } else {
-                            authData = setResponse(true, { 'auth': false }, "토큰발급 실패(비밀번호 불일치)", 400);
-                            res.send(authData);
-                        }
-                    })
-                } else {
-                    authData = setResponse(true, { 'auth': false }, "토큰발급 실패(존재하지 않는 사용자) : " + err, 400);
-                    res.send(authData);
-                }
-            }
-        }
-    );
+    //회원 비밀번호 일치 여부 확인
+    let checkPw = await userfunc.checkPassword(userEmail,userPW);
+    if(!checkPw.data.corect){
+        return res.send(setResponse(true, { 'auth': false }, "토큰발급 실패(비밀번호 불일치)", 400));
+    }
+
+    res.send(setResponse(true, { 'auth': false }, "토큰발급 실패(비밀번호 불일치)", 400));
 });
 
 /*
@@ -108,8 +89,7 @@ router.route("/token")
         const refreshToken = req.body.refreshToken;
         let userData = "";
         if(!refreshToken) userData = setResponse(true, { 'loggedIn': false }, "토큰발급 실패(refreshToken 없음)", 403);
-        const sendmsg = token().issuance(refreshToken);
-        res.send(sendmsg);
+        res.send(token().issuance(refreshToken));
     })
 
 module.exports = router;
