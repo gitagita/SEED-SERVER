@@ -25,13 +25,10 @@ router.post("/", function (req, res) {
     const userEmail = body.userEmail;
     const userNickname = body.userNickname;
     const policyAgree = body.policyAgree;
-
-    let sendmsg = "";
     let setting = [];
 
     if (userPW === undefined || userEmail === undefined || userNickname === undefined || policyAgree === undefined) {    //회원가입 항목 검사
-        sendmsg = setResponse(true, { 'signed': false }, "회원정보 수정 실패(필수 가입 항목 확인)");
-        return res.send(sendmsg);
+        return res.send(setResponse(true, { 'signed': false }, "회원정보 수정 실패(필수 가입 항목 확인)"));
     }
 
     //이메일 중복 검사
@@ -39,12 +36,10 @@ router.post("/", function (req, res) {
     db.query(
         sqlCheck, setting, (err, result) => {
             if (err) {
-                sendmsg = setResponse(true, err, "서버 내부 오류", 500);
-                res.send(sendmsg);
+                res.send(setResponse(true, err, "서버 내부 오류", 500));
             } else {
                 if(result.length != 0 && result[0].userCnt > 0){
-                    sendmsg = setResponse(true, { 'signed': false }, "회원 가입 실패(아이디 중복) : " + err);
-                    res.send(sendmsg);
+                    res.send(setResponse(true, { 'signed': false }, "회원 가입 실패(아이디 중복)"));
                 } else {
                     setting.push(userEmail);
                     setting.push(userNickname);
@@ -52,21 +47,18 @@ router.post("/", function (req, res) {
                     setting.push(moment().format("YYYY-MM-DDTHH:mm:ss"));   //회원가입일
 
                     //비밀번호 bcrypt 암호화
-                    bcrypt.hash(userPW, SEED_SALT, (err, encryptedPW) => {
-                        if (err) {
-                            sendmsg = setResponse(true, { 'signed': false }, "회원 가입 실패(비밀번호 암호화 실패) : " + err);
-                            res.send(sendmsg);
+                    bcrypt.hash(userPW, SEED_SALT, (err2, encryptedPW) => {
+                        if (err2) {
+                            res.send(setResponse(true, { 'signed': false }, "회원 가입 실패(비밀번호 암호화 실패) : " + err2));
                         } else {
                             setting.push(encryptedPW);  //암호화된 비밀번호
                             const sql = "INSERT INTO member (email, memNm, policyAgree, regDt, password) VALUE (?,?,?,?,?);";
                             db.query(
-                                sql, setting, (err, result) => {
-                                    if (err) {
-                                        sendmsg = setResponse(true, err, "서버 내부 오류", 500);
-                                        res.send(sendmsg);
+                                sql, setting, (err3, result) => {
+                                    if (err3) {
+                                        res.send(setResponse(true, err3, "서버 내부 오류", 500));
                                     } else {
-                                        sendmsg = setResponse(false, { 'signed': true, 'result': result }, "회원 가입 성공");
-                                        res.send(sendmsg);
+                                        res.send(setResponse(false, { 'signed': true, 'result': result }, "회원 가입 성공"));
                                     }
                                 }
                             );
@@ -76,9 +68,6 @@ router.post("/", function (req, res) {
             }
         }
     );
-
-
-    
 });
 
 module.exports = router;
