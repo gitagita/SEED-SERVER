@@ -47,7 +47,7 @@ router.post("/", async function (req, res) {
     setting.push(moment().format("YYYY-MM-DDTHH:mm:ss"));
     
     //회원탈퇴로그
-    const sql = "INSERT INTO member_withdrawal_log (memNo, email, reason, regDt) VALUE (?,?,?,?);";
+    const sql = "INSERT INTO member_withdrawal_log (memNo, email, reason, regDt) VALUES (?,?,?,?);";
     db.query(
         sql, setting, (err, result) => {
             if (err) {

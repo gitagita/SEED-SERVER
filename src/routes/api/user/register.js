@@ -52,7 +52,7 @@ router.post("/", function (req, res) {
                             res.send(setResponse(true, { 'signed': false }, "회원 가입 실패(비밀번호 암호화 실패) : " + err2));
                         } else {
                             setting.push(encryptedPW);  //암호화된 비밀번호
-                            const sql = "INSERT INTO member (email, memNm, policyAgree, regDt, password) VALUE (?,?,?,?,?);";
+                            const sql = "INSERT INTO member (email, memNm, policyAgree, regDt, password) VALUES (?,?,?,?,?);";
                             db.query(
                                 sql, setting, (err3, result) => {
                                     if (err3) {
