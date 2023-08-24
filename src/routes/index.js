@@ -22,4 +22,7 @@ router.use('/user/login', require('./api/user/login'));
 //회원 로그아웃 api yuna
 router.use('/user/logout', require('./api/user/logout'));
 
+//회원 이메일 인증 api yuna
+router.use('/user/auth/email', require('./api/user/auth'));
+
 module.exports = router;
