@@ -4,7 +4,7 @@ var db = require('./../../../../db');
 const bcrypt = require('bcrypt');
 var userfunc = require('./userfunc');
 
-var setResponse = function (error, data, message, status) {
+var setResponse = (error, data, message, status) => {
     if (!error) status = "200";
     return {
         'status': status,
@@ -18,7 +18,7 @@ var setResponse = function (error, data, message, status) {
  * 전체 회원 리스트 정보 조회(아이디(이메일), 이름, 이미지)
  * @author yuna
  */
-router.get("/", function (req, res) {
+router.get("/", (req, res) => {
     let field = "email as memId, memNm, image";
     const sql = "SELECT " + field + " FROM member WHERE withdrawal = 0;";
     db.query(
@@ -36,7 +36,7 @@ router.get("/", function (req, res) {
  * 해당 아이디(이메일)에 해당하는 회원 정보 조회(아이디(이메일), 이름, 이미지)
  * @author yuna
  */
-router.get("/:id", function (req, res) {
+router.get("/:id", (req, res) => {
     const id = req.params.id;
     let field = "email as memId, memNm, image";
     const sql = "SELECT " + field + " FROM member WHERE email = '" + id + "' AND withdrawal = 0;";
@@ -57,7 +57,7 @@ router.get("/:id", function (req, res) {
  * 비밀번호 확인 yuna
  * @author yuna
  */
-router.post("/:id/password", async function (req, res) {
+router.post("/:id/password", async (req, res) => {
     const userEmail = req.params.id;
     const body = req.body;
     const userPW = body.userPW;

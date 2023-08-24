@@ -20,7 +20,7 @@ var setResponse = (error, data, message, status) => {
  * 회원 정보 수정(이름, 이미지)
  * @author yuna
  */
-router.post("/", async function (req, res) {
+router.post("/", async (req, res) => {
     const body = req.body;
     const userEmail = body.userEmail;
     const userPW = body.userPW;
@@ -69,7 +69,7 @@ router.post("/", async function (req, res) {
  * 회원 비밀번호 수정
  * @author yuna
  */
-router.post("/password", async function (req, res) {
+router.post("/password", async (req, res) => {
     const body = req.body;
     const userEmail = body.userEmail;
     const userPW = body.userPW;

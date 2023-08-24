@@ -5,7 +5,7 @@ const moment = require("moment");
 const bcrypt = require('bcrypt');
 const SEED_SALT = 12;
 
-var setResponse = function (error, data, message, status) {
+var setResponse = (error, data, message, status) => {
     if (!error) status = "200";
     return {
         'status': status,
@@ -19,7 +19,7 @@ var setResponse = function (error, data, message, status) {
  * 회원 등록
  * @author yuna
  */
-router.post("/", function (req, res) {
+router.post("/", (req, res) => {
     const body = req.body;
     const userPW = body.userPW;
     const userEmail = body.userEmail;
